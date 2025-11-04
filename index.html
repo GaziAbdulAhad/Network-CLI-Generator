@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intelli-Code CLI Generator Prototype (User Friendly UI)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Light background for clean look */
+        }
+        /* Custom scrollbar for command output */
+        #output-container::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        #output-container::-webkit-scrollbar-thumb {
+            background-color: #4b5563; /* Darker grey for terminal theme */
+            border-radius: 4px;
+        }
+        #output-container::-webkit-scrollbar-track {
+            background-color: #1f2937; /* Very dark track */
+        }
+        .loading-animation {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #34d399; /* Emerald-400 */
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Styles for the new Visual Toggle Switch */
+        #toggle-path {
+            background-color: #9ca3af; /* Gray background when unchecked */
+        }
+        #debug-mode-toggle:checked + #toggle-path {
+            background-color: #f87171; /* Red background when checked */
+        }
+        #toggle-circle {
+            transition: transform 0.2s ease-in-out, background-color 0.2s ease-in-out;
+            transform: translateX(0);
+        }
+        #debug-mode-toggle:checked + #toggle-path + #toggle-circle {
+            transform: translateX(28px); /* Move circle to the right */
+        }
+        /* Default state of mode labels */
+        .mode-label {
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+        }
+        #config-label.active {
+            background-color: #10b981; /* Emerald-600 active */
+            color: white;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        }
+        #debug-label.active {
+            background-color: #ef4444; /* Red-500 active */
+            color: white;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-6 md:p-10 min-h-screen">
+
+    <div class="max-w-4xl mx-auto">
+        <!-- Header -->
+        <header class="text-center mb-10">
+            <h1 class="text-4xl font-extrabold text-gray-800">Intelli-Code CLI Generator</h1>
+            <p class="text-xl text-gray-500 mt-2">AI-Driven Configuration & Debugging Prototype</p>
+        </header>
+
+        <!-- Input Card -->
+        <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-xl border border-gray-100 mb-10">
+            <h2 class="text-2xl font-bold text-gray-700 mb-6 flex items-center">
+                <svg class="w-6 h-6 mr-2 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                1. Define Your Task or Problem
+            </h2>
+
+            <!-- Mode Selection Switch -->
+            <div class="mb-6 border-b pb-4 border-gray-100">
+                <p class="block text-sm font-medium text-gray-700 mb-3">Select Operating Mode:</p>
+                <div class="flex flex-wrap gap-3 items-center justify-between bg-gray-50 p-2 rounded-xl shadow-inner transition duration-300 w-full" id="mode-switch-container">
+                    
+                    <!-- Configuration Mode Label -->
+                    <span id="config-label" class="mode-label active text-sm font-semibold px-4 py-2 rounded-lg transition duration-300">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        Configuration Mode
+                    </span>
+                    
+                    <!-- Toggle Switch -->
+                    <label for="debug-mode-toggle" class="relative flex items-center justify-center cursor-pointer">
+                        <input type="checkbox" id="debug-mode-toggle" class="sr-only">
+                        <div id="toggle-path" class="w-12 h-6 rounded-full shadow-inner transition duration-200 ease-in-out"></div>
+                        <div id="toggle-circle" class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full shadow transition duration-200 ease-in-out transform"></div>
+                    </label>
+                    
+                    <!-- Debug Mode Label -->
+                    <span id="debug-label" class="mode-label text-sm font-semibold px-4 py-2 rounded-lg text-gray-500 transition duration-300">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Debugging Mode
+                    </span>
+                </div>
+            </div>
+
+            <!-- Vendor Selection -->
+            <div class="mb-6">
+                <label for="vendor-select" class="block text-sm font-medium text-gray-700 mb-2">Select System/Network Vendor:</label>
+                <select id="vendor-select" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 transition duration-150 ease-in-out bg-white shadow-sm">
+                    
+                    <!-- Cisco Networking Options -->
+                    <option value="Cisco CCNA (Switching & Routing)">Cisco CCNA (Switching & Routing)</option>
+                    <option value="Cisco CCNP ENCOR (Enterprise Core)">Cisco CCNP ENCOR (Enterprise Core)</option>
+                    <option value="Cisco CCNP ENARSI (Advanced Services)">Cisco CCNP ENARSI (Advanced Services)</option>
+                    
+                    <!-- Huawei Networking Options -->
+                    <option value="Huawei OLT (MA5800/MA5600 Series)">Huawei OLT (MA5800/MA5600 Series)</option>
+                    <option value="Huawei Enterprise Switches (S Series)">Huawei Enterprise Switches (S Series)</option>
+                    <option value="Huawei Enterprise Routers (AR/NE Series)">Huawei Enterprise Routers (AR/NE Series)</option>
+
+                    <!-- Other OLT Options -->
+                    <option value="ZTE OLT (C300/C600 Series)">ZTE OLT (C300/C600 Series)</option>
+                    <option value="BDCOM OLT">BDCOM OLT</option>
+                    <option value="C-Data OLT">C-Data OLT</option>
+                    <option value="Generic OLT (EPON/GPON/Other)">Generic OLT (EPON/GPON/Other)</option>
+
+                    <!-- Juniper Networking Options -->
+                    <option value="Juniper JNCIA (Associate Level)">Juniper JNCIA (Associate Level)</option>
+                    <option value="Juniper JNCIS (Specialist Level)">Juniper JNCIS (Specialist Level)</option>
+                    <option value="Mikrotik RouterOS">Mikrotik RouterOS</option>
+                    <option value="FortiGate CLI">FortiGate CLI (Firewall)</option>
+                    
+                    <!-- System Administration Options -->
+                    <option value="Windows Active Directory (PowerShell/CMD)">Windows Active Directory (PowerShell/CMD)</option>
+                    <option value="Linux (Generic Server/Networking)">Linux (Generic Server/Networking)</option>
+                    <option value="Red Hat/RHEL (System Administration)">Red Hat/RHEL (System Administration)</option>
+                </select>
+            </div>
+
+            <!-- Natural Language Prompt -->
+            <div class="mb-6">
+                <label id="prompt-label" for="prompt-input" class="block text-sm font-medium text-gray-700 mb-2">Describe the Task in Natural Language (e.g., Configure a new VLAN):</label>
+                <textarea id="prompt-input" rows="4" placeholder="e.g., Configure OSPF area 0 on GigE 0/1. (OR: My BGP neighbor is down and I see a 'Hold Timer Expired' error.)"
+                    class="w-full p-4 border border-gray-300 rounded-lg resize-none focus:ring-emerald-500 focus:border-emerald-500 transition duration-150 ease-in-out shadow-sm"></textarea>
+            </div>
+
+            <!-- Generate Button -->
+            <button id="generate-button"
+                class="w-full px-6 py-3 bg-emerald-600 text-white font-bold rounded-lg shadow-lg hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-500 focus:ring-opacity-50 transition duration-150 ease-in-out disabled:opacity-50 flex items-center justify-center">
+                <svg id="button-icon" class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                <span id="button-text">Generate CLI Commands</span>
+            </button>
+
+            <!-- Loading Indicator -->
+            <div id="loading-indicator" class="hidden flex items-center mt-4 text-emerald-600 font-medium">
+                <div class="loading-animation mr-3"></div>
+                Generating commands... Please wait.
+            </div>
+        </div>
+
+        <!-- Output Card -->
+        <div class="bg-gray-800 p-6 sm:p-8 rounded-2xl shadow-2xl">
+            <h2 class="text-2xl font-bold text-white mb-6 flex items-center">
+                <svg class="w-6 h-6 mr-2 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                2. Generated Output
+            </h2>
+            
+            <!-- Command Output Container -->
+            <pre id="output-container" class="bg-gray-900 text-green-300 p-4 rounded-lg overflow-auto text-sm whitespace-pre-wrap max-h-80 min-h-[180px] font-mono shadow-inner border border-gray-700">
+                <code id="cli-output">The generated CLI commands or debugging output will appear here.</code>
+            </pre>
+
+            <!-- Citations Area -->
+            <div class="mt-6 pt-4 border-t border-gray-700">
+                <h3 class="text-sm font-bold text-gray-300 mb-2">Sources (Google Search Grounding):</h3>
+                <div id="citations-output" class="text-xs text-gray-400 space-y-1">
+                    No sources yet.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK Imports & Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global variables provided by the Canvas environment
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        
+        // UI Elements
+        const vendorSelect = document.getElementById('vendor-select');
+        const promptInput = document.getElementById('prompt-input');
+        const generateButton = document.getElementById('generate-button');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const cliOutput = document.getElementById('cli-output');
+        const citationsOutput = document.getElementById('citations-output');
+        const debugModeToggle = document.getElementById('debug-mode-toggle'); 
+        const promptLabel = document.getElementById('prompt-label');
+        const configLabel = document.getElementById('config-label');
+        const debugLabel = document.getElementById('debug-label');
+        const togglePath = document.getElementById('toggle-path');
+        const toggleCircle = document.getElementById('toggle-circle');
+        const buttonText = document.getElementById('button-text');
+        const buttonIcon = document.getElementById('button-icon');
+
+        let auth, db;
+        const model = 'gemini-2.5-flash-preview-09-2025';
+        const apiKey = ""; // Canvas environment provides API key (MUST be empty string)
+
+        // Utility function to handle API calls with exponential backoff
+        async function fetchWithBackoff(url, options, maxRetries = 5) {
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (response.status !== 429) { // Not a Rate Limit error
+                        return response;
+                    }
+                } catch (error) {
+                    console.error("Fetch error, retrying:", error);
+                }
+                const delay = Math.pow(2, i) * 1000 + Math.random() * 1000;
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
+            throw new Error("API request failed after multiple retries.");
+        }
+
+        async function initializeAppAndAuth() {
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                setLogLevel('error'); // Only log serious errors for a cleaner console
+
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                console.log("Firebase Auth initialized successfully.");
+            } catch (error) {
+                console.error("Firebase initialization failed:", error);
+                // Continue application even if auth fails, as LLM is independent
+            }
+        }
+
+        // --- Core Logic: Gemini API Call ---
+        async function generateCliCommands() {
+            const vendor = vendorSelect.value;
+            const userPrompt = promptInput.value.trim();
+            const isDebuggingMode = debugModeToggle.checked; // Check mode
+
+            if (!userPrompt) {
+                cliOutput.textContent = isDebuggingMode ? "Please enter the error or problem description." : "Please enter a task description before generating commands.";
+                return;
+            }
+
+            // UI State: Loading
+            generateButton.disabled = true;
+            loadingIndicator.classList.remove('hidden');
+            cliOutput.textContent = isDebuggingMode ? 'Analyzing problem and preparing fix...' : 'Contacting AI expert...';
+            citationsOutput.innerHTML = '';
+
+            let systemPrompt;
+            let userQuery;
+
+            if (isDebuggingMode) {
+                // Debugging Mode Logic
+                systemPrompt = `You are an expert Network/System Troubleshooting Engineer. The user is providing a problem description or an error message for a ${vendor} device/system. Your goal is to analyze the issue, identify the root cause, and provide a clear, step-by-step solution. Your response must be formatted like a terminal session: start with the problem analysis, then provide the diagnostic commands (like 'show' or 'cat') and their expected output, followed by the exact fix commands. Use raw text formatting with line breaks to mimic a terminal session, including appropriate command prompts (e.g., 'Router#', '$', 'OLT>', etc.). Wrap the ENTIRE output in a single markdown code block for a clean terminal look, and provide no text outside of it.`;
+                
+                userQuery = `TROUBLESHOOTING TASK for ${vendor}: The problem is: ${userPrompt}`;
+            } else {
+                // Configuration Mode Logic
+                systemPrompt = `You are an expert network and system automation engineer specialized in CLI generation. Your task is to provide the exact, runnable CLI commands needed to complete the user's request for the specified vendor/system. Do not provide any explanation, comments, or extra text. The commands must be wrapped inside a single, standard markdown code block, and should be the *only* content in your response outside of that code block. If the task is impossible or highly ambiguous, state only 'UNABLE TO GENERATE COMMANDS' instead.`;
+
+                userQuery = `Generate commands for a ${vendor} device/system. The administration task is: ${userPrompt}`;
+            }
+
+            try {
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+                const payload = {
+                    contents: [{ parts: [{ text: userQuery }] }],
+                    tools: [{ "google_search": {} }], 
+                    systemInstruction: {
+                        parts: [{ text: systemPrompt }]
+                    },
+                };
+
+                const response = await fetchWithBackoff(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                const result = await response.json();
+                
+                const candidate = result.candidates?.[0];
+
+                if (candidate && candidate.content?.parts?.[0]?.text) {
+                    let text = candidate.content.parts[0].text;
+                    let sources = [];
+                    
+                    // Cleanup: Extract text from the markdown code block (if present)
+                    const codeBlockMatch = text.match(/```[a-z]*\n([\s\S]*?)\n```/);
+                    if (codeBlockMatch && codeBlockMatch[1]) {
+                        text = codeBlockMatch[1].trim();
+                    } else {
+                        // If no code block is found, assume the raw text is the command (or error)
+                        text = text.trim();
+                    }
+
+                    cliOutput.textContent = text;
+                    
+                    // Extract grounding sources
+                    const groundingMetadata = candidate.groundingMetadata;
+                    if (groundingMetadata && groundingMetadata.groundingAttributions) {
+                        sources = groundingMetadata.groundingAttributions
+                            .map((attribution, index) => ({
+                                uri: attribution.web?.uri,
+                                title: attribution.web?.title || `Source ${index + 1}`,
+                            }))
+                            .filter(source => source.uri); // Only keep valid sources
+                    }
+
+                    // Display sources
+                    citationsOutput.innerHTML = '';
+                    if (sources.length > 0) {
+                        citationsOutput.textContent = 'Sources used for grounding:';
+                        sources.forEach((source, index) => {
+                            const link = document.createElement('a');
+                            link.href = source.uri;
+                            link.target = "_blank";
+                            link.rel = "noopener noreferrer";
+                            link.className = 'citation-link text-gray-400 hover:text-emerald-400 block';
+                            link.textContent = `${index + 1}. ${source.title}`;
+                            citationsOutput.appendChild(link);
+                        });
+                    } else {
+                        citationsOutput.textContent = "No specific online sources were utilized for grounding this response.";
+                    }
+
+                } else {
+                    cliOutput.textContent = "Error: Could not retrieve a valid response from the API. Check the console for details.";
+                    console.error("API response structure unexpected:", result);
+                }
+
+            } catch (error) {
+                console.error("CLI Generation Failed:", error);
+                cliOutput.textContent = `An error occurred during command generation: ${error.message}. Please try again.`;
+                citationsOutput.textContent = "";
+            } finally {
+                // UI State: Idle
+                generateButton.disabled = false;
+                loadingIndicator.classList.add('hidden');
+            }
+        }
+        
+        // Dynamic UI Change Listener
+        debugModeToggle.addEventListener('change', () => {
+            const isDebugging = debugModeToggle.checked;
+            
+            // --- Update UI for Debug Mode ---
+            if (isDebugging) {
+                promptLabel.textContent = "Describe the Error or Problem for Debugging (e.g., BGP neighbor down, SSH access fails):";
+                
+                // Button Update
+                buttonText.textContent = "Analyze & Provide Fix";
+                generateButton.classList.remove('bg-emerald-600', 'hover:bg-emerald-700', 'focus:ring-emerald-500');
+                generateButton.classList.add('bg-red-600', 'hover:bg-red-700', 'focus:ring-red-500');
+                
+                // Icon Update (Wrench/Troubleshooting)
+                buttonIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37zM15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>`;
+                
+                // Toggle Switch Visuals
+                configLabel.classList.remove('active');
+                debugLabel.classList.add('active');
+            } 
+            // --- Update UI for Configuration Mode ---
+            else {
+                promptLabel.textContent = "Describe the Task in Natural Language (e.g., Configure a new VLAN):";
+                
+                // Button Update
+                buttonText.textContent = "Generate CLI Commands";
+                generateButton.classList.remove('bg-red-600', 'hover:bg-red-700', 'focus:ring-red-500');
+                generateButton.classList.add('bg-emerald-600', 'hover:bg-emerald-700', 'focus:ring-emerald-500');
+                
+                // Icon Update (Arrow/Generation)
+                buttonIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>`;
+                
+                // Toggle Switch Visuals
+                configLabel.classList.add('active');
+                debugLabel.classList.remove('active');
+            }
+            
+            // Reset output when mode changes
+            cliOutput.textContent = isDebugging ? 'Switching to Debugging Mode. Describe the issue above.' : 'Switching to Configuration Mode. Describe the task above.';
+            citationsOutput.innerHTML = '';
+        });
+
+        // Event Listeners
+        generateButton.addEventListener('click', generateCliCommands);
+        promptInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault(); // Prevent newline in textarea
+                generateCliCommands();
+            }
+        });
+
+        // Initialize Firebase on load
+        initializeAppAndAuth();
+
+    </script>
+</body>
+</html>
